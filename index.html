@@ -1,1 +1,738 @@
+<!DOCTYPE html>
 
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice — Guitar Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2C1A0E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Practice">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --wood-dark: #2C1A0E;
+    --wood-mid: #5C3A1E;
+    --wood-warm: #8B5E3C;
+    --wood-light: #C4956A;
+    --wood-pale: #E8C9A0;
+    --cream: #F5ECD7;
+    --cream-soft: #FAF4E8;
+    --string: #D4AF5A;
+    --string-dim: #8B7340;
+    --text-primary: #1E0F05;
+    --text-secondary: #5C3A1E;
+    --text-muted: #8B6B4A;
+  }
+
+- { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+font-family: ‘DM Sans’, sans-serif;
+background: var(–cream);
+color: var(–text-primary);
+min-height: 100vh;
+max-width: 430px;
+margin: 0 auto;
+overflow-x: hidden;
+}
+
+body::before {
+content: ‘’;
+position: fixed; inset: 0;
+background-image:
+repeating-linear-gradient(92deg, transparent, transparent 2px, rgba(92,58,30,0.03) 2px, rgba(92,58,30,0.03) 3px),
+repeating-linear-gradient(88deg, transparent, transparent 8px, rgba(92,58,30,0.02) 8px, rgba(92,58,30,0.02) 9px);
+pointer-events: none; z-index: 0;
+}
+
+/* ── Header ── */
+header {
+background: var(–wood-dark);
+padding: 20px 24px 16px;
+position: relative; overflow: hidden;
+z-index: 10;
+}
+header::after {
+content: ‘’; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+background: linear-gradient(90deg, var(–string-dim), var(–string), var(–string-dim));
+}
+.header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.app-title { font-family: ‘Playfair Display’, serif; font-size: 22px; font-weight: 700; color: var(–cream); }
+.app-subtitle { font-size: 11px; color: var(–wood-light); letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; font-weight: 300; }
+.tuning-badge { background: rgba(196,149,106,0.2); border: 1px solid var(–wood-warm); border-radius: 20px; padding: 5px 12px; font-size: 11px; color: var(–wood-pale); letter-spacing: 1px; }
+
+/* ── Streak bar ── */
+.streak-bar {
+background: var(–wood-mid); padding: 12px 24px;
+display: flex; align-items: center; gap: 16px;
+border-bottom: 1px solid rgba(196,149,106,0.2);
+position: relative; z-index: 10;
+}
+.streak-item { display: flex; align-items: center; gap: 6px; }
+.streak-icon { font-size: 16px; }
+.streak-label { font-size: 10px; color: var(–wood-light); text-transform: uppercase; letter-spacing: 1px; }
+.streak-value { font-size: 16px; font-weight: 600; color: var(–cream); font-family: ‘Playfair Display’, serif; }
+.streak-divider { width: 1px; height: 28px; background: rgba(196,149,106,0.25); }
+
+/* ── Tab sections ── */
+.section { display: none; padding: 20px 20px 0; position: relative; z-index: 1; }
+.section.active { display: block; }
+.section-title { font-family: ‘Playfair Display’, serif; font-size: 20px; font-weight: 600; color: var(–wood-dark); margin-bottom: 4px; }
+.section-desc { font-size: 12px; color: var(–text-muted); margin-bottom: 20px; font-weight: 300; }
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+width: 100%; max-width: 430px;
+background: var(–wood-dark);
+border-top: 1px solid rgba(212,175,90,0.25);
+display: flex; padding: 8px 0 20px; z-index: 200;
+}
+.bottom-tab {
+flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+padding: 6px 0; cursor: pointer; user-select: none;
+}
+.bottom-tab-icon { font-size: 19px; opacity: 0.45; transition: opacity 0.2s; }
+.bottom-tab-label { font-size: 8px; color: var(–wood-light); letter-spacing: 0.6px; text-transform: uppercase; opacity: 0.55; transition: all 0.2s; }
+.bottom-tab.active .bottom-tab-icon { opacity: 1; }
+.bottom-tab.active .bottom-tab-label { color: var(–string); opacity: 1; }
+
+.app-content { padding-bottom: 100px; }
+
+/* ── Shared components ── */
+.focus-label { font-size: 11px; color: var(–text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; font-weight: 500; }
+.focus-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.chip { padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1.5px solid var(–wood-light); background: transparent; color: var(–text-secondary); cursor: pointer; transition: all 0.15s; user-select: none; }
+.chip.selected { background: var(–wood-dark); border-color: var(–wood-dark); color: var(–cream); }
+.chip:active { transform: scale(0.96); }
+.divider { height: 1px; background: rgba(92,58,30,0.08); margin: 20px 0; }
+
+.btn-main { width: 100%; background: var(–wood-mid); color: var(–cream); border: none; border-radius: 12px; padding: 14px; font-family: ‘DM Sans’, sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.5px; cursor: pointer; transition: all 0.15s; }
+.btn-main:active { background: var(–wood-dark); transform: scale(0.98); }
+
+/* Toast */
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(–wood-dark); color: var(–cream); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.3s; white-space: nowrap; z-index: 300; border: 1px solid var(–string-dim); pointer-events: none; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ════════════════════════════
+TIMER
+════════════════════════════ */
+.timer-card {
+background: var(–wood-dark); border-radius: 20px; padding: 32px 24px;
+text-align: center; position: relative; overflow: hidden; margin-bottom: 16px;
+}
+.timer-card::before {
+content: ‘’; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px;
+border-radius: 50%; background: radial-gradient(circle, rgba(196,149,106,0.15) 0%, transparent 70%);
+}
+.timer-display { font-family: ‘Playfair Display’, serif; font-size: 64px; font-weight: 700; color: var(–cream); letter-spacing: -2px; line-height: 1; margin-bottom: 6px; }
+.timer-status-label { font-size: 11px; color: var(–wood-light); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+.timer-controls { display: flex; gap: 12px; justify-content: center; align-items: center; }
+.btn-circle { width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: rgba(196,149,106,0.2); color: var(–wood-pale); }
+.btn-circle:active { transform: scale(0.94); }
+.btn-circle-lg { width: 72px; height: 72px; font-size: 26px; background: var(–string); color: var(–wood-dark); box-shadow: 0 4px 20px rgba(212,175,90,0.35); }
+.notes-input { width: 100%; background: white; border: 1.5px solid rgba(92,58,30,0.15); border-radius: 12px; padding: 12px 14px; font-family: ‘DM Sans’, sans-serif; font-size: 13px; color: var(–text-primary); resize: none; height: 72px; margin-bottom: 14px; outline: none; transition: border-color 0.2s; }
+.notes-input:focus { border-color: var(–wood-warm); }
+.notes-input::placeholder { color: var(–text-muted); }
+.log-title { font-size: 11px; color: var(–text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500; margin: 24px 0 12px; }
+.session-entry { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid var(–wood-light); animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.entry-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.entry-duration { font-family: ‘Playfair Display’, serif; font-size: 18px; font-weight: 600; color: var(–wood-dark); }
+.entry-date { font-size: 11px; color: var(–text-muted); }
+.entry-focus { font-size: 11px; color: var(–wood-warm); font-weight: 500; margin-bottom: 4px; }
+.entry-notes { font-size: 12px; color: var(–text-muted); font-weight: 300; }
+
+/* ════════════════════════════
+METRONOME
+════════════════════════════ */
+.metro-card {
+background: var(–wood-dark); border-radius: 20px; padding: 28px 24px 32px;
+text-align: center; position: relative; overflow: hidden; margin-bottom: 16px;
+}
+.metro-card::before {
+content: ‘’; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+width: 160px; height: 160px; border-radius: 50%;
+background: radial-gradient(circle, rgba(212,175,90,0.08) 0%, transparent 70%);
+}
+.pendulum-wrap { width: 120px; height: 100px; margin: 0 auto 16px; position: relative; display: flex; align-items: flex-start; justify-content: center; }
+.pendulum-pivot { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 10px; height: 10px; border-radius: 50%; background: var(–wood-light); z-index: 2; }
+.pendulum-arm {
+position: absolute; top: 5px; left: 50%;
+width: 3px; height: 75px;
+background: linear-gradient(180deg, var(–wood-light) 0%, var(–string) 100%);
+border-radius: 2px; transform-origin: top center;
+transform: translateX(-50%) rotate(0deg);
+}
+.pendulum-arm::after {
+content: ‘’; position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%);
+width: 22px; height: 22px; border-radius: 50%; background: var(–string);
+box-shadow: 0 0 16px rgba(212,175,90,0.6);
+}
+.bpm-display { font-family: ‘Playfair Display’, serif; font-size: 76px; font-weight: 700; color: var(–cream); letter-spacing: -4px; line-height: 1; margin-bottom: 2px; transition: color 0.05s; }
+.bpm-display.flash { color: var(–string); }
+.bpm-unit { font-size: 11px; color: var(–wood-light); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 18px; }
+.beat-dots { display: flex; gap: 10px; justify-content: center; margin-bottom: 22px; }
+.beat-dot { width: 11px; height: 11px; border-radius: 50%; background: rgba(196,149,106,0.2); transition: background 0.06s, transform 0.06s; }
+.beat-dot.lit { background: var(–string); transform: scale(1.35); box-shadow: 0 0 8px rgba(212,175,90,0.5); }
+.beat-dot.lit.downbeat { background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
+.metro-play-btn { width: 68px; height: 68px; border-radius: 50%; border: none; cursor: pointer; background: var(–string); color: var(–wood-dark); font-size: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 4px 20px rgba(212,175,90,0.4); transition: all 0.15s; }
+.metro-play-btn:active { transform: scale(0.93); }
+.bpm-slider-wrap { margin-bottom: 16px; }
+.bpm-slider { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(196,149,106,0.25); outline: none; margin-bottom: 12px; }
+.bpm-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: var(–string); cursor: pointer; box-shadow: 0 2px 8px rgba(212,175,90,0.5); }
+.bpm-nudge { display: flex; gap: 8px; justify-content: center; align-items: center; }
+.btn-nudge { background: rgba(196,149,106,0.15); border: 1px solid rgba(196,149,106,0.3); color: var(–wood-pale); border-radius: 10px; padding: 7px 16px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: ‘DM Sans’, sans-serif; transition: all 0.12s; }
+.btn-nudge:active { background: rgba(196,149,106,0.3); transform: scale(0.95); }
+.metro-options { background: white; border-radius: 16px; padding: 16px 18px; margin-bottom: 12px; }
+.metro-option-label { font-size: 10px; color: var(–text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500; margin-bottom: 10px; }
+.btn-tap { width: 100%; background: var(–cream-soft); border: 2px solid var(–wood-light); border-radius: 14px; padding: 15px; font-family: ‘Playfair Display’, serif; font-size: 15px; font-weight: 600; color: var(–wood-dark); cursor: pointer; transition: all 0.1s; }
+.btn-tap:active { background: var(–wood-pale); transform: scale(0.98); border-color: var(–wood-warm); }
+
+/* ════════════════════════════
+SCALES
+════════════════════════════ */
+.scale-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 14px; border: 1.5px solid rgba(92,58,30,0.1); }
+.scale-name { font-family: ‘Playfair Display’, serif; font-size: 18px; font-weight: 600; color: var(–wood-dark); margin-bottom: 2px; }
+.scale-key-label { font-size: 11px; color: var(–text-muted); margin-bottom: 14px; letter-spacing: 0.5px; }
+.fretboard { background: var(–wood-mid); border-radius: 8px; padding: 12px 8px; position: relative; overflow: hidden; }
+.fretboard::before { content: ‘’; position: absolute; top: 0; bottom: 0; left: 20px; width: 2px; background: rgba(212,175,90,0.6); }
+.string-row { display: flex; align-items: center; margin-bottom: 8px; gap: 6px; }
+.string-row:last-child { margin-bottom: 0; }
+.string-name { width: 16px; font-size: 10px; color: var(–wood-pale); font-weight: 500; text-align: center; flex-shrink: 0; }
+.string-line { flex: 1; height: 20px; position: relative; display: flex; align-items: center; }
+.string-line::before { content: ‘’; position: absolute; left: 0; right: 0; height: 1px; background: rgba(212,175,90,0.5); }
+.fret-dots { display: flex; gap: 6px; position: relative; z-index: 1; }
+.fret-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
+.fret-dot.root { background: var(–string); color: var(–wood-dark); }
+.fret-dot.note { background: rgba(196,149,106,0.35); color: var(–cream); }
+.fret-dot.empty { background: transparent; }
+.scale-notes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.note-pill { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; background: var(–cream); color: var(–text-secondary); border: 1px solid rgba(92,58,30,0.15); }
+.note-pill.root { background: var(–wood-dark); color: var(–string); border-color: var(–wood-dark); }
+.exercise-card { background: white; border-radius: 16px; padding: 16px 18px; margin-bottom: 10px; border: 1.5px solid rgba(92,58,30,0.08); display: flex; align-items: center; gap: 14px; }
+.exercise-icon { width: 40px; height: 40px; background: var(–cream); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.exercise-info { flex: 1; }
+.exercise-name { font-size: 14px; font-weight: 500; color: var(–text-primary); margin-bottom: 2px; }
+.exercise-desc { font-size: 11px; color: var(–text-muted); font-weight: 300; }
+.exercise-bpm-val { font-family: ‘Playfair Display’, serif; font-size: 16px; font-weight: 600; color: var(–wood-warm); text-align: right; }
+.exercise-bpm-val span { display: block; font-family: ‘DM Sans’, sans-serif; font-size: 9px; color: var(–text-muted); font-weight: 400; text-transform: uppercase; letter-spacing: 1px; }
+
+/* ════════════════════════════
+SONGS
+════════════════════════════ */
+.song-card { background: white; border-radius: 16px; padding: 16px 18px; margin-bottom: 12px; border: 1.5px solid rgba(92,58,30,0.08); }
+.song-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.song-title { font-family: ‘Playfair Display’, serif; font-size: 16px; font-weight: 600; color: var(–wood-dark); }
+.song-artist { font-size: 11px; color: var(–text-muted); margin-top: 1px; }
+.song-status { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 500; letter-spacing: 0.5px; white-space: nowrap; }
+.status-learning { background: #FEF3C7; color: #92400E; }
+.status-polishing { background: #DBEAFE; color: #1E40AF; }
+.status-done { background: #D1FAE5; color: #065F46; }
+.progress-bar-wrap { height: 6px; background: rgba(92,58,30,0.1); border-radius: 3px; margin-bottom: 10px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(–wood-warm), var(–string)); }
+.song-meta { display: flex; gap: 14px; }
+.song-meta-item { font-size: 11px; color: var(–text-muted); }
+.song-meta-item strong { color: var(–text-secondary); font-weight: 500; }
+
+/* ════════════════════════════
+THEORY
+════════════════════════════ */
+.theory-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 14px; border: 1.5px solid rgba(92,58,30,0.08); }
+.theory-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; background: var(–cream); color: var(–text-muted); margin-bottom: 10px; border: 1px solid rgba(92,58,30,0.12); }
+.theory-title { font-family: ‘Playfair Display’, serif; font-size: 17px; font-weight: 600; color: var(–wood-dark); margin-bottom: 8px; }
+.theory-body { font-size: 13px; color: var(–text-secondary); line-height: 1.65; font-weight: 300; }
+.theory-body strong { font-weight: 500; color: var(–text-primary); }
+.chord-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.chord-box { background: var(–cream-soft); border-radius: 10px; padding: 10px 8px; text-align: center; border: 1px solid rgba(92,58,30,0.1); }
+.chord-box-name { font-family: ‘Playfair Display’, serif; font-size: 14px; font-weight: 600; color: var(–wood-dark); margin-bottom: 3px; }
+.chord-box-notes { font-size: 10px; color: var(–text-muted); }
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <div class="app-title">Practice</div>
+      <div class="app-subtitle">Guitar Studio</div>
+    </div>
+    <div class="tuning-badge">E A D G B e</div>
+  </div>
+</header>
+
+<div class="streak-bar">
+  <div class="streak-item">
+    <span class="streak-icon">🔥</span>
+    <div>
+      <div class="streak-value" id="streak-count">3</div>
+      <div class="streak-label">Day streak</div>
+    </div>
+  </div>
+  <div class="streak-divider"></div>
+  <div class="streak-item">
+    <span class="streak-icon">⏱</span>
+    <div>
+      <div class="streak-value" id="total-time">2h 40m</div>
+      <div class="streak-label">This week</div>
+    </div>
+  </div>
+  <div class="streak-divider"></div>
+  <div class="streak-item">
+    <span class="streak-icon">🎵</span>
+    <div>
+      <div class="streak-value" id="session-count">7</div>
+      <div class="streak-label">Sessions</div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+
+  <!-- ════ TIMER ════ -->
+
+  <div class="section active" id="sec-timer">
+    <p class="section-title">Session Timer</p>
+    <p class="section-desc">Track your practice time and log each session.</p>
+
+```
+<div class="timer-card">
+  <div class="timer-display" id="timer-display">00:00</div>
+  <div class="timer-status-label" id="timer-status">Ready to practice</div>
+  <div class="timer-controls">
+    <button class="btn-circle" onclick="resetTimer()">↺</button>
+    <button class="btn-circle btn-circle-lg" id="start-stop-btn" onclick="toggleTimer()">▶</button>
+    <button class="btn-circle" onclick="lapTimer()">◉</button>
+  </div>
+</div>
+
+<div class="focus-label">Today's Focus</div>
+<div class="focus-chips">
+  <div class="chip selected" onclick="this.classList.toggle('selected')">Scales</div>
+  <div class="chip" onclick="this.classList.toggle('selected')">Song Learning</div>
+  <div class="chip" onclick="this.classList.toggle('selected')">Theory</div>
+  <div class="chip" onclick="this.classList.toggle('selected')">Finger Exercises</div>
+  <div class="chip" onclick="this.classList.toggle('selected')">Free Play</div>
+</div>
+
+<textarea class="notes-input" id="session-notes" placeholder="Session notes — what did you work on?"></textarea>
+<button class="btn-main" onclick="logSession()">Log This Session</button>
+
+<div class="log-title">Recent Sessions</div>
+<div id="session-log">
+  <div class="session-entry">
+    <div class="entry-top"><div class="entry-duration">42 min</div><div class="entry-date">Today</div></div>
+    <div class="entry-focus">Scales · Finger Exercises</div>
+    <div class="entry-notes">Worked through A minor pentatonic in all 5 positions. Feeling more fluid above the 7th fret.</div>
+  </div>
+  <div class="session-entry">
+    <div class="entry-top"><div class="entry-duration">28 min</div><div class="entry-date">Yesterday</div></div>
+    <div class="entry-focus">Song Learning</div>
+    <div class="entry-notes">Practiced the bridge of Blackbird. Still tripping on the thumb pattern.</div>
+  </div>
+  <div class="session-entry">
+    <div class="entry-top"><div class="entry-duration">35 min</div><div class="entry-date">2 days ago</div></div>
+    <div class="entry-focus">Theory</div>
+    <div class="entry-notes">Circle of fifths — finally making sense. Practiced chord progressions in G major.</div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ════ METRONOME ════ -->
+
+  <div class="section" id="sec-metro">
+    <p class="section-title">Metronome</p>
+    <p class="section-desc">Tap tempo or dial in your BPM. Beat 1 accents louder.</p>
+
+```
+<div class="metro-card">
+  <div class="pendulum-wrap">
+    <div class="pendulum-pivot"></div>
+    <div class="pendulum-arm" id="pendulum"></div>
+  </div>
+  <div class="bpm-display" id="bpm-display">80</div>
+  <div class="bpm-unit">BPM</div>
+  <div class="beat-dots" id="beat-dots">
+    <div class="beat-dot"></div>
+    <div class="beat-dot"></div>
+    <div class="beat-dot"></div>
+    <div class="beat-dot"></div>
+  </div>
+  <button class="metro-play-btn" id="metro-play-btn" onclick="toggleMetro()">▶</button>
+  <div class="bpm-slider-wrap">
+    <input type="range" class="bpm-slider" id="bpm-slider" min="40" max="220" value="80" oninput="setBpm(+this.value)">
+    <div class="bpm-nudge">
+      <button class="btn-nudge" onclick="nudgeBpm(-10)">−10</button>
+      <button class="btn-nudge" onclick="nudgeBpm(-1)">−1</button>
+      <button class="btn-nudge" onclick="nudgeBpm(+1)">+1</button>
+      <button class="btn-nudge" onclick="nudgeBpm(+10)">+10</button>
+    </div>
+  </div>
+</div>
+
+<div class="metro-options">
+  <div class="metro-option-label">Time Signature</div>
+  <div class="focus-chips" id="sig-chips">
+    <div class="chip selected" onclick="selectSig(this, 4)">4/4</div>
+    <div class="chip" onclick="selectSig(this, 3)">3/4</div>
+    <div class="chip" onclick="selectSig(this, 6)">6/8</div>
+    <div class="chip" onclick="selectSig(this, 2)">2/4</div>
+    <div class="chip" onclick="selectSig(this, 5)">5/4</div>
+  </div>
+</div>
+
+<button class="btn-tap" onclick="tapTempo()">Tap Tempo &nbsp;🎵</button>
+```
+
+  </div>
+
+  <!-- ════ SCALES ════ -->
+
+  <div class="section" id="sec-scales">
+    <p class="section-title">Scales & Exercises</p>
+    <p class="section-desc">Reference scales and finger-building exercises.</p>
+
+```
+<div class="focus-label">Select Scale</div>
+<div class="focus-chips" id="scale-chips">
+  <div class="chip selected" onclick="selectScale(this, 'pentatonic')">Minor Pentatonic</div>
+  <div class="chip" onclick="selectScale(this, 'major')">Major</div>
+  <div class="chip" onclick="selectScale(this, 'blues')">Blues</div>
+  <div class="chip" onclick="selectScale(this, 'dorian')">Dorian</div>
+</div>
+
+<div class="scale-card">
+  <div class="scale-name" id="scale-display-name">A Minor Pentatonic</div>
+  <div class="scale-key-label" id="scale-display-key">Root: A · Pattern 1 (Open Position)</div>
+  <div class="fretboard">
+    <div class="string-row"><div class="string-name">e</div><div class="string-line"><div class="fret-dots"><div class="fret-dot root">A</div><div class="fret-dot empty"></div><div class="fret-dot note">C</div><div class="fret-dot empty"></div><div class="fret-dot note">D</div></div></div></div>
+    <div class="string-row"><div class="string-name">B</div><div class="string-line"><div class="fret-dots"><div class="fret-dot empty"></div><div class="fret-dot note">E</div><div class="fret-dot empty"></div><div class="fret-dot note">G</div><div class="fret-dot empty"></div></div></div></div>
+    <div class="string-row"><div class="string-name">G</div><div class="string-line"><div class="fret-dots"><div class="fret-dot empty"></div><div class="fret-dot note">C</div><div class="fret-dot empty"></div><div class="fret-dot note">D</div><div class="fret-dot empty"></div></div></div></div>
+    <div class="string-row"><div class="string-name">D</div><div class="string-line"><div class="fret-dots"><div class="fret-dot empty"></div><div class="fret-dot note">E</div><div class="fret-dot empty"></div><div class="fret-dot note">G</div><div class="fret-dot empty"></div></div></div></div>
+    <div class="string-row"><div class="string-name">A</div><div class="string-line"><div class="fret-dots"><div class="fret-dot root">A</div><div class="fret-dot empty"></div><div class="fret-dot note">C</div><div class="fret-dot empty"></div><div class="fret-dot note">D</div></div></div></div>
+    <div class="string-row"><div class="string-name">E</div><div class="string-line"><div class="fret-dots"><div class="fret-dot root">A</div><div class="fret-dot empty"></div><div class="fret-dot note">C</div><div class="fret-dot empty"></div><div class="fret-dot note">D</div></div></div></div>
+  </div>
+  <div class="scale-notes">
+    <div class="note-pill root">A</div>
+    <div class="note-pill">C</div>
+    <div class="note-pill">D</div>
+    <div class="note-pill">E</div>
+    <div class="note-pill">G</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+<div class="focus-label">Finger Exercises</div>
+<div class="exercise-card">
+  <div class="exercise-icon">🕷</div>
+  <div class="exercise-info"><div class="exercise-name">Spider Walk</div><div class="exercise-desc">1-2-3-4 across all strings, both directions</div></div>
+  <div class="exercise-bpm-val">60<span>start BPM</span></div>
+</div>
+<div class="exercise-card">
+  <div class="exercise-icon">🔄</div>
+  <div class="exercise-info"><div class="exercise-name">Hammer-on / Pull-off</div><div class="exercise-desc">Build legato fluidity on pentatonic shapes</div></div>
+  <div class="exercise-bpm-val">70<span>start BPM</span></div>
+</div>
+<div class="exercise-card">
+  <div class="exercise-icon">📍</div>
+  <div class="exercise-info"><div class="exercise-name">Chromatic Ladder</div><div class="exercise-desc">1-2-3-4 pattern shifting up one fret each rep</div></div>
+  <div class="exercise-bpm-val">50<span>start BPM</span></div>
+</div>
+<div class="exercise-card">
+  <div class="exercise-icon">↔️</div>
+  <div class="exercise-info"><div class="exercise-name">String Skipping</div><div class="exercise-desc">Skip one string between each note for accuracy</div></div>
+  <div class="exercise-bpm-val">55<span>start BPM</span></div>
+</div>
+```
+
+  </div>
+
+  <!-- ════ SONGS ════ -->
+
+  <div class="section" id="sec-songs">
+    <p class="section-title">Song Learning</p>
+    <p class="section-desc">Track your songs and where you're at with each.</p>
+
+```
+<div class="song-card">
+  <div class="song-top"><div><div class="song-title">Blackbird</div><div class="song-artist">The Beatles</div></div><div class="song-status status-polishing">Polishing</div></div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:75%"></div></div>
+  <div class="song-meta"><div class="song-meta-item"><strong>Key:</strong> G</div><div class="song-meta-item"><strong>Technique:</strong> Fingerpicking</div><div class="song-meta-item"><strong>75%</strong> complete</div></div>
+</div>
+<div class="song-card">
+  <div class="song-top"><div><div class="song-title">Wish You Were Here</div><div class="song-artist">Pink Floyd</div></div><div class="song-status status-learning">Learning</div></div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:40%"></div></div>
+  <div class="song-meta"><div class="song-meta-item"><strong>Key:</strong> G</div><div class="song-meta-item"><strong>Technique:</strong> Fingerstyle</div><div class="song-meta-item"><strong>40%</strong> complete</div></div>
+</div>
+<div class="song-card">
+  <div class="song-top"><div><div class="song-title">Dust in the Wind</div><div class="song-artist">Kansas</div></div><div class="song-status status-done">Done ✓</div></div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:100%"></div></div>
+  <div class="song-meta"><div class="song-meta-item"><strong>Key:</strong> C</div><div class="song-meta-item"><strong>Technique:</strong> Fingerpicking</div><div class="song-meta-item"><strong>100%</strong> complete</div></div>
+</div>
+<button class="btn-main" style="margin-top:8px" onclick="showToast('Song added!')">+ Add Song</button>
+```
+
+  </div>
+
+  <!-- ════ THEORY ════ -->
+
+  <div class="section" id="sec-theory">
+    <p class="section-title">Music Theory</p>
+    <p class="section-desc">Concepts to understand, not just memorize.</p>
+
+```
+<div class="theory-card">
+  <div class="theory-tag">Foundations</div>
+  <div class="theory-title">The CAGED System</div>
+  <div class="theory-body">The guitar neck repeats 5 chord shapes — <strong>C, A, G, E, D</strong> — up the neck. Every major chord can be played in all 5 positions. Once you know where your root note falls within each shape, you can play any chord anywhere.</div>
+  <div class="chord-grid">
+    <div class="chord-box"><div class="chord-box-name">C shape</div><div class="chord-box-notes">Frets 1–3</div></div>
+    <div class="chord-box"><div class="chord-box-name">A shape</div><div class="chord-box-notes">Moveable</div></div>
+    <div class="chord-box"><div class="chord-box-name">G shape</div><div class="chord-box-notes">Open stretch</div></div>
+    <div class="chord-box"><div class="chord-box-name">E shape</div><div class="chord-box-notes">Barre root</div></div>
+    <div class="chord-box"><div class="chord-box-name">D shape</div><div class="chord-box-notes">High position</div></div>
+  </div>
+</div>
+<div class="theory-card">
+  <div class="theory-tag">Harmony</div>
+  <div class="theory-title">Circle of Fifths</div>
+  <div class="theory-body">Moving clockwise adds one sharp, counterclockwise adds one flat. Keys a fifth apart share almost all the same notes — that's why chord progressions like <strong>I → IV → V</strong> sound so natural. In G major: G → C → D.</div>
+</div>
+<div class="theory-card">
+  <div class="theory-tag">Scales</div>
+  <div class="theory-title">Modes from the Major Scale</div>
+  <div class="theory-body">Start the major scale on a different degree and you get a different mode. <strong>Dorian</strong> (2nd degree) sounds minor but with a raised 6th — jazzier and less dark than natural minor. <strong>Mixolydian</strong> (5th) is the blues-rock workhorse — major with a flat 7.</div>
+</div>
+<div class="theory-card">
+  <div class="theory-tag">Rhythm</div>
+  <div class="theory-title">Subdivisions</div>
+  <div class="theory-body">Quarter notes divide into 8ths (1-and), which divide into 16ths (1-e-and-a). Most rock and folk sits in 8ths. Triplets split a beat into 3 — the shuffle feel comes from playing only the 1st and 3rd of each triplet.</div>
+</div>
+```
+
+  </div>
+
+</div><!-- end app-content -->
+
+<!-- ════ BOTTOM NAV ════ -->
+
+<nav class="bottom-nav">
+  <div class="bottom-tab active" id="tab-timer" onclick="switchTab('timer', this)">
+    <div class="bottom-tab-icon">⏱</div>
+    <div class="bottom-tab-label">Timer</div>
+  </div>
+  <div class="bottom-tab" id="tab-metro" onclick="switchTab('metro', this)">
+    <div class="bottom-tab-icon">🥁</div>
+    <div class="bottom-tab-label">Metro</div>
+  </div>
+  <div class="bottom-tab" id="tab-scales" onclick="switchTab('scales', this)">
+    <div class="bottom-tab-icon">🎸</div>
+    <div class="bottom-tab-label">Scales</div>
+  </div>
+  <div class="bottom-tab" id="tab-songs" onclick="switchTab('songs', this)">
+    <div class="bottom-tab-icon">🎵</div>
+    <div class="bottom-tab-label">Songs</div>
+  </div>
+  <div class="bottom-tab" id="tab-theory" onclick="switchTab('theory', this)">
+    <div class="bottom-tab-icon">📖</div>
+    <div class="bottom-tab-label">Theory</div>
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Tab navigation ──
+function switchTab(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  el.classList.add('active');
+  window.scrollTo(0, 0);
+  if (name !== 'metro') stopMetro();
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── Timer ──
+let timerInterval = null, seconds = 0, running = false;
+function pad(n) { return String(n).padStart(2, '0'); }
+function updateTimerDisplay() {
+  document.getElementById('timer-display').textContent = pad(Math.floor(seconds / 60)) + ':' + pad(seconds % 60);
+}
+function toggleTimer() {
+  const btn = document.getElementById('start-stop-btn');
+  const status = document.getElementById('timer-status');
+  if (!running) {
+    running = true; btn.textContent = '⏸'; status.textContent = 'Practicing…';
+    timerInterval = setInterval(() => { seconds++; updateTimerDisplay(); }, 1000);
+  } else {
+    running = false; btn.textContent = '▶'; status.textContent = 'Paused';
+    clearInterval(timerInterval);
+  }
+}
+function resetTimer() {
+  clearInterval(timerInterval); running = false; seconds = 0;
+  document.getElementById('start-stop-btn').textContent = '▶';
+  document.getElementById('timer-status').textContent = 'Ready to practice';
+  updateTimerDisplay();
+}
+function lapTimer() {
+  if (seconds === 0) return;
+  showToast('Lap: ' + pad(Math.floor(seconds / 60)) + ':' + pad(seconds % 60));
+}
+function logSession() {
+  if (seconds === 0) { showToast('Start the timer first!'); return; }
+  const m = Math.floor(seconds / 60), s = seconds % 60;
+  const duration = m > 0 ? m + ' min' + (s > 0 ? ' ' + s + 's' : '') : s + 's';
+  const focus = Array.from(document.querySelectorAll('#sec-timer .chip.selected')).map(c => c.textContent).join(' · ') || 'General';
+  const notes = document.getElementById('session-notes').value.trim();
+  const entry = document.createElement('div');
+  entry.className = 'session-entry';
+  entry.innerHTML = `<div class="entry-top"><div class="entry-duration">${duration}</div><div class="entry-date">Just now</div></div><div class="entry-focus">${focus}</div>${notes ? `<div class="entry-notes">${notes}</div>` : ''}`;
+  document.getElementById('session-log').insertBefore(entry, document.getElementById('session-log').firstChild);
+  const el = document.getElementById('session-count');
+  el.textContent = parseInt(el.textContent) + 1;
+  document.getElementById('session-notes').value = '';
+  resetTimer();
+  showToast('Session logged! 🎸');
+}
+
+// ── Metronome ──
+let bpm = 80, beatsPerMeasure = 4, metroRunning = false;
+let audioCtx = null, metroTimeout = null, nextBeatTime = 0, currentBeat = 0, pendulumDir = 1;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function scheduleClick(time, isAccent) {
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.frequency.value = isAccent ? 1200 : 900;
+  gain.gain.setValueAtTime(isAccent ? 0.55 : 0.3, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+  osc.start(time); osc.stop(time + 0.08);
+}
+function tick() {
+  if (!metroRunning) return;
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  const beatDuration = 60 / bpm;
+  while (nextBeatTime < now + 0.1) {
+    const beat = currentBeat % beatsPerMeasure;
+    const isAccent = beat === 0;
+    scheduleClick(nextBeatTime, isAccent);
+    const delay = Math.max(0, (nextBeatTime - now) * 1000);
+    const b = beat;
+    setTimeout(() => flashBeat(b, isAccent), delay);
+    nextBeatTime += beatDuration;
+    currentBeat++;
+  }
+  metroTimeout = setTimeout(tick, 25);
+}
+function flashBeat(beat, isAccent) {
+  document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('lit', 'downbeat'));
+  const dots = document.querySelectorAll('.beat-dot');
+  if (dots[beat]) { dots[beat].classList.add('lit'); if (isAccent) dots[beat].classList.add('downbeat'); }
+  const disp = document.getElementById('bpm-display');
+  disp.classList.add('flash'); setTimeout(() => disp.classList.remove('flash'), 80);
+  const arm = document.getElementById('pendulum');
+  const angle = pendulumDir * 35;
+  arm.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+  arm.style.transition = `transform ${(60 / bpm) * 0.9}s ease-in-out`;
+  pendulumDir *= -1;
+}
+function toggleMetro() {
+  const btn = document.getElementById('metro-play-btn');
+  if (!metroRunning) {
+    metroRunning = true; btn.textContent = '⏹';
+    currentBeat = 0; pendulumDir = 1;
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    nextBeatTime = ctx.currentTime + 0.05;
+    tick();
+  } else { stopMetro(); }
+}
+function stopMetro() {
+  if (!metroRunning) return;
+  metroRunning = false; clearTimeout(metroTimeout);
+  const btn = document.getElementById('metro-play-btn');
+  if (btn) btn.textContent = '▶';
+  document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('lit', 'downbeat'));
+  const arm = document.getElementById('pendulum');
+  if (arm) { arm.style.transition = 'transform 0.4s ease'; arm.style.transform = 'translateX(-50%) rotate(0deg)'; }
+}
+function setBpm(val) {
+  bpm = Math.max(40, Math.min(220, val));
+  document.getElementById('bpm-display').textContent = bpm;
+  document.getElementById('bpm-slider').value = bpm;
+  if (metroRunning) { clearTimeout(metroTimeout); nextBeatTime = getAudioCtx().currentTime + 0.05; tick(); }
+}
+function nudgeBpm(delta) { setBpm(bpm + delta); }
+function selectSig(el, beats) {
+  document.querySelectorAll('#sig-chips .chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  beatsPerMeasure = beats; currentBeat = 0;
+  const container = document.getElementById('beat-dots');
+  container.innerHTML = '';
+  for (let i = 0; i < beats; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'beat-dot';
+    container.appendChild(dot);
+  }
+}
+let tapTimes = [];
+function tapTempo() {
+  const now = Date.now();
+  tapTimes.push(now);
+  tapTimes = tapTimes.filter(t => now - t < 3000).slice(-8);
+  if (tapTimes.length >= 2) {
+    const intervals = [];
+    for (let i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i - 1]);
+    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    setBpm(Math.round(60000 / avg));
+    showToast(bpm + ' BPM');
+  } else { showToast('Keep tapping…'); }
+}
+
+// ── Scales ──
+const scaleData = {
+  pentatonic: { name: 'A Minor Pentatonic', key: 'Root: A · Pattern 1 (Open Position)' },
+  major:      { name: 'G Major Scale',      key: 'Root: G · Open Position' },
+  blues:      { name: 'A Blues Scale',      key: 'Root: A · Adds ♭5 (blue note)' },
+  dorian:     { name: 'D Dorian Mode',      key: 'Root: D · Minor with raised 6th' },
+};
+function selectScale(el, key) {
+  document.querySelectorAll('#scale-chips .chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('scale-display-name').textContent = scaleData[key].name;
+  document.getElementById('scale-display-key').textContent = scaleData[key].key;
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js');
+  });
+}
+</script>
+
+</body>
+</html>
