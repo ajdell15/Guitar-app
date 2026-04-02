@@ -459,26 +459,36 @@ THEORY
   <div class="section" id="sec-songs">
     <p class="section-title">Song Learning</p>
     <p class="section-desc">Track your songs and where you're at with each.</p>
+    <div id="song-list"></div>
+    <button class="btn-main" style="margin-top:4px" onclick="openAddSong()">+ Add Song</button>
+  </div>
 
-```
-<div class="song-card">
-  <div class="song-top"><div><div class="song-title">Blackbird</div><div class="song-artist">The Beatles</div></div><div class="song-status status-polishing">Polishing</div></div>
-  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:75%"></div></div>
-  <div class="song-meta"><div class="song-meta-item"><strong>Key:</strong> G</div><div class="song-meta-item"><strong>Technique:</strong> Fingerpicking</div><div class="song-meta-item"><strong>75%</strong> complete</div></div>
-</div>
-<div class="song-card">
-  <div class="song-top"><div><div class="song-title">Wish You Were Here</div><div class="song-artist">Pink Floyd</div></div><div class="song-status status-learning">Learning</div></div>
-  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:40%"></div></div>
-  <div class="song-meta"><div class="song-meta-item"><strong>Key:</strong> G</div><div class="song-meta-item"><strong>Technique:</strong> Fingerstyle</div><div class="song-meta-item"><strong>40%</strong> complete</div></div>
-</div>
-<div class="song-card">
-  <div class="song-top"><div><div class="song-title">Dust in the Wind</div><div class="song-artist">Kansas</div></div><div class="song-status status-done">Done ✓</div></div>
-  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:100%"></div></div>
-  <div class="song-meta"><div class="song-meta-item"><strong>Key:</strong> C</div><div class="song-meta-item"><strong>Technique:</strong> Fingerpicking</div><div class="song-meta-item"><strong>100%</strong> complete</div></div>
-</div>
-<button class="btn-main" style="margin-top:8px" onclick="showToast('Song added!')">+ Add Song</button>
-```
+  <!-- Add/Edit Song Modal -->
 
+  <div id="song-modal" style="display:none; position:fixed; inset:0; background:rgba(28,16,8,0.7); z-index:400; align-items:flex-end; justify-content:center;">
+    <div style="background:var(--cream); border-radius:20px 20px 0 0; padding:28px 24px 40px; width:100%; max-width:430px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <span style="font-family:'Playfair Display',serif; font-size:18px; font-weight:600; color:var(--wood-dark);" id="modal-title">Add Song</span>
+        <button onclick="closeAddSong()" style="background:none; border:none; font-size:22px; color:var(--text-muted); cursor:pointer; padding:4px;">✕</button>
+      </div>
+      <div style="margin-bottom:14px;">
+        <div class="focus-label">Song Title</div>
+        <input id="song-title-input" type="text" placeholder="e.g. Blackbird" style="width:100%; background:white; border:1.5px solid rgba(92,58,30,0.15); border-radius:12px; padding:12px 14px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text-primary); outline:none;">
+      </div>
+      <div style="margin-bottom:20px;">
+        <div class="focus-label">Artist</div>
+        <input id="song-artist-input" type="text" placeholder="e.g. The Beatles" style="width:100%; background:white; border:1.5px solid rgba(92,58,30,0.15); border-radius:12px; padding:12px 14px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text-primary); outline:none;">
+      </div>
+      <div style="margin-bottom:24px;">
+        <div class="focus-label">Status</div>
+        <div style="display:flex; gap:8px;">
+          <div class="chip selected" id="status-chip-Learning" onclick="selectStatus('Learning')">Learning</div>
+          <div class="chip" id="status-chip-Polishing" onclick="selectStatus('Polishing')">Polishing</div>
+          <div class="chip" id="status-chip-Done" onclick="selectStatus('Done')">Done ✓</div>
+        </div>
+      </div>
+      <button class="btn-main" onclick="saveSong()">Save Song</button>
+    </div>
   </div>
 
   <!-- ════ THEORY ════ -->
@@ -724,6 +734,88 @@ function selectScale(el, key) {
   document.getElementById('scale-display-name').textContent = scaleData[key].name;
   document.getElementById('scale-display-key').textContent = scaleData[key].key;
 }
+
+// ── Songs ──
+const DEFAULT_SONGS = [
+  { id: 1, title: 'Blackbird',          artist: 'The Beatles', status: 'Polishing' },
+  { id: 2, title: 'Wish You Were Here', artist: 'Pink Floyd',  status: 'Learning'  },
+  { id: 3, title: 'Dust in the Wind',   artist: 'Kansas',      status: 'Done'      },
+];
+let songs = [];
+let selectedStatus = 'Learning';
+
+function loadSongs() {
+  const saved = localStorage.getItem('guitar-songs');
+  songs = saved ? JSON.parse(saved) : DEFAULT_SONGS;
+  renderSongs();
+}
+function saveSongs() {
+  localStorage.setItem('guitar-songs', JSON.stringify(songs));
+}
+function statusClass(s) {
+  return s === 'Done' ? 'status-done' : s === 'Polishing' ? 'status-polishing' : 'status-learning';
+}
+function renderSongs() {
+  const list = document.getElementById('song-list');
+  if (!list) return;
+  if (songs.length === 0) {
+    list.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:13px;padding:32px 0;font-weight:300;">No songs yet — add one below!</p>';
+    return;
+  }
+  list.innerHTML = songs.map(s => `
+    <div class="song-card">
+      <div class="song-top">
+        <div><div class="song-title">${s.title}</div><div class="song-artist">${s.artist}</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="song-status ${statusClass(s.status)}">${s.status === 'Done' ? 'Done ✓' : s.status}</div>
+          <button onclick="deleteSong(${s.id})" style="background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer;padding:2px 6px;">✕</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        ${['Learning','Polishing','Done'].map(st => `
+          <button onclick="changeStatus(${s.id},'${st}')" style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid ${s.status===st?'var(--wood-dark)':'rgba(92,58,30,0.2)'};background:${s.status===st?'var(--wood-dark)':'transparent'};color:${s.status===st?'var(--cream)':'var(--text-muted)'};font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;">${st === 'Done' ? 'Done ✓' : st}</button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+function changeStatus(id, status) {
+  songs = songs.map(s => s.id === id ? {...s, status} : s);
+  saveSongs(); renderSongs();
+}
+function deleteSong(id) {
+  songs = songs.filter(s => s.id !== id);
+  saveSongs(); renderSongs();
+  showToast('Song removed');
+}
+function openAddSong() {
+  selectedStatus = 'Learning';
+  document.getElementById('song-title-input').value = '';
+  document.getElementById('song-artist-input').value = '';
+  selectStatus('Learning');
+  document.getElementById('song-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('song-title-input').focus(), 100);
+}
+function closeAddSong() {
+  document.getElementById('song-modal').style.display = 'none';
+}
+function selectStatus(status) {
+  selectedStatus = status;
+  ['Learning','Polishing','Done'].forEach(s => {
+    const el = document.getElementById('status-chip-' + s);
+    if (el) el.classList.toggle('selected', s === status);
+  });
+}
+function saveSong() {
+  const title = document.getElementById('song-title-input').value.trim();
+  const artist = document.getElementById('song-artist-input').value.trim();
+  if (!title) { showToast('Enter a song title first'); return; }
+  songs.unshift({ id: Date.now(), title, artist: artist || 'Unknown', status: selectedStatus });
+  saveSongs(); renderSongs();
+  closeAddSong();
+  showToast('Song added! 🎵');
+}
+loadSongs();
 </script>
 
 <script>
